@@ -3,15 +3,13 @@
 # Usage: scripts/deploy.sh [switch|test|boot|dry-build]   (default: switch)
 set -euo pipefail
 
-HOST="homeserver"
+cd "$(dirname "$0")/.."
+source .env.variables
+
 ACTION="${1:-switch}"
 
-cd "$(dirname "$0")/.."
-
 scp nixos/configuration.nix nixos/hardware-configuration.nix nixos/flake.nix nixos/flake.lock \
-  "$HOST:/tmp/"
+  "$SERVER_HOST:/etc/nixos/"
 
-ssh -t "$HOST" "
-  sudo cp /tmp/configuration.nix /tmp/hardware-configuration.nix /tmp/flake.nix /tmp/flake.lock /etc/nixos/ &&
-  sudo nixos-rebuild $ACTION --flake /etc/nixos#nixos --option experimental-features 'nix-command flakes'
-"
+ssh "$SERVER_HOST" \
+  "sudo nixos-rebuild $ACTION --flake /etc/nixos#nixos --option experimental-features 'nix-command flakes'"
