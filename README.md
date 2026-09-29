@@ -23,7 +23,7 @@ hardware/OS details.
 
 - `.env.variables` — non-sensitive, versioned (host alias, static IP, etc).
   Scripts `source` this.
-- `.env.secrets` — gitignored, never committed. Copy `.env.secrets.example`
+- `.env.secrets` — gitignored, never committed. Copy `.env.secrets.sample`
   to create it once something actually needs a secret (API key, auth token).
   Nothing needs this yet.
 
