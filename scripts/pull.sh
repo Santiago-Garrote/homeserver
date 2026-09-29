@@ -8,3 +8,5 @@ cd "$(dirname "$0")/.."
 
 scp "$HOST:/etc/nixos/configuration.nix" nixos/configuration.nix
 scp "$HOST:/etc/nixos/hardware-configuration.nix" nixos/hardware-configuration.nix
+scp "$HOST:/etc/nixos/flake.nix" nixos/flake.nix
+scp "$HOST:/etc/nixos/flake.lock" nixos/flake.lock

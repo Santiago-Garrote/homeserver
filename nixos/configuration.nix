@@ -72,6 +72,15 @@
   # Allow unfree packages
   nixpkgs.config.allowUnfree = true;
 
+  # This system is managed via the flake in this same directory.
+  nix.settings.experimental-features = [ "nix-command" "flakes" ];
+
+  # garro already has full root via wheel+sudo; this just lets deploys write
+  # the new config into place without an extra interactive sudo prompt.
+  systemd.tmpfiles.rules = [
+    "d /etc/nixos 0755 garro users -"
+  ];
+
   # Let garro run nixos-rebuild without a password (deploys from the
   # infra-as-code repo), but require it for everything else sudo-able.
   security.sudo.extraRules = [
