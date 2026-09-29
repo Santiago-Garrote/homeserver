@@ -32,7 +32,7 @@
   networking.nameservers = [ "192.168.1.1" ];
 
   # Setup networking
-  networking.firewall.allowedTCPPorts = [ 22 53 3000 ];
+  networking.firewall.allowedTCPPorts = [ 22 53 80 3000 ];
   networking.firewall.allowedUDPPorts = [ 53 ];
 
   # Set your time zone.
