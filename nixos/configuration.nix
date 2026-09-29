@@ -32,7 +32,8 @@
   networking.nameservers = [ "192.168.1.1" ];
 
   # Setup networking
-  networking.firewall.allowedTCPPorts = [ 22 ];
+  networking.firewall.allowedTCPPorts = [ 22 53 3000 ];
+  networking.firewall.allowedUDPPorts = [ 53 ];
 
   # Set your time zone.
   time.timeZone = "America/Argentina/Buenos_Aires";
@@ -130,6 +131,15 @@
 
   # Enable docker daemon
   virtualisation.docker.enable = true;
+
+  # LAN-wide DNS ad-blocking + local DNS. First run: visit
+  # http://192.168.1.29:3000 to complete the setup wizard (admin user +
+  # upstream DNS servers) — those choices are stored in mutable state on
+  # the box (/var/lib/AdGuardHome), not in this file.
+  services.adguardhome = {
+    enable = true;
+    mutableSettings = true;
+  };
 
   # Open ports in the firewall.
   # networking.firewall.allowedTCPPorts = [ ... ];
