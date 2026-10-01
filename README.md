@@ -29,7 +29,12 @@ hardware/OS details.
 
 ## SSH / sudo access
 
-- Alias `homeserver` is configured in `~/.ssh/config` (key-based auth).
+- Alias `homeserver` is configured in `~/.ssh/config` (key-based auth), pointed
+  at the LAN IP. A second alias, `homeserver-ts`, connects over Tailscale
+  instead (`nixos.tail70aa47.ts.net`) — useful when off the LAN. Both scripts
+  and one-off `ssh`/`scp` commands can use either alias directly; `scripts/
+  deploy.sh` and `scripts/pull.sh` also accept `TAILSCALE=1` to switch to the
+  tailnet host without typing the alias out.
 - `garro` has scoped passwordless `sudo` for `nixos-rebuild` only
   (`security.sudo.extraRules` in `configuration.nix`) — everything else
   still prompts.
