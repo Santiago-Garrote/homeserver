@@ -1,0 +1,246 @@
+{
+  "id": null,
+  "uid": "homeserver-overview",
+  "title": "Homeserver Overview",
+  "tags": ["homeserver"],
+  "timezone": "browser",
+  "refresh": "30s",
+  "schemaVersion": 39,
+  "version": 1,
+  "time": { "from": "now-6h", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "CPU Usage",
+      "gridPos": { "x": 0, "y": 0, "w": 4, "h": 4 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "100 - netdata_system_cpu_percentage_average{dimension=\"idle\"}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 70 },
+              { "color": "red", "value": 90 }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Memory Available (GiB)",
+      "gridPos": { "x": 4, "y": 0, "w": 4, "h": 4 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "netdata_mem_available_MiB_average{dimension=\"avail\"} / 1024"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "decimals": 1,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "yellow", "value": 1 },
+              { "color": "green", "value": 2 }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "Disk Used % (/)",
+      "gridPos": { "x": 8, "y": 0, "w": 4, "h": 4 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "netdata_disk_space_GiB_average{mount_point=\"/\", dimension=\"used\"} / (netdata_disk_space_GiB_average{mount_point=\"/\", dimension=\"used\"} + netdata_disk_space_GiB_average{mount_point=\"/\", dimension=\"avail\"} + netdata_disk_space_GiB_average{mount_point=\"/\", dimension=\"reserved for root\"}) * 100"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 75 },
+              { "color": "red", "value": 90 }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "Load Average (1m)",
+      "gridPos": { "x": 12, "y": 0, "w": 4, "h": 4 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "netdata_system_load_load_average{dimension=\"load1\"}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "decimals": 2
+        }
+      }
+    },
+    {
+      "id": 5,
+      "type": "stat",
+      "title": "Uptime",
+      "gridPos": { "x": 16, "y": 0, "w": 4, "h": 4 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "netdata_system_uptime_seconds_average{dimension=\"uptime\"}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s"
+        }
+      }
+    },
+    {
+      "id": 6,
+      "type": "stat",
+      "title": "Failed systemd Units",
+      "gridPos": { "x": 20, "y": 0, "w": 4, "h": 4 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(netdata_systemd_service_unit_state_state_average{dimension=\"failed\"})"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "red", "value": 1 }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 7,
+      "type": "timeseries",
+      "title": "CPU Breakdown",
+      "gridPos": { "x": 0, "y": 4, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "netdata_system_cpu_percentage_average{dimension!=\"idle\"}",
+          "legendFormat": "{{dimension}}"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "percent" } }
+    },
+    {
+      "id": 8,
+      "type": "timeseries",
+      "title": "Memory Breakdown",
+      "gridPos": { "x": 12, "y": 4, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "netdata_system_ram_MiB_average",
+          "legendFormat": "{{dimension}}"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "none" } }
+    },
+    {
+      "id": 9,
+      "type": "timeseries",
+      "title": "Network Traffic (LAN + Tailscale)",
+      "gridPos": { "x": 0, "y": 12, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "netdata_net_net_kilobits_persec_average{device=~\"enp3s0|tailscale0\"}",
+          "legendFormat": "{{device}} {{dimension}}"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "none" } }
+    },
+    {
+      "id": 10,
+      "type": "timeseries",
+      "title": "Disk Utilization (sda)",
+      "gridPos": { "x": 12, "y": 12, "w": 6, "h": 8 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "netdata_disk_util___of_time_working_average{device=\"sda\"}",
+          "legendFormat": "busy"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "percent" } }
+    },
+    {
+      "id": 11,
+      "type": "timeseries",
+      "title": "Disk Latency (sda)",
+      "gridPos": { "x": 18, "y": 12, "w": 6, "h": 8 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "netdata_disk_await_milliseconds_operation_average{device=\"sda\"}",
+          "legendFormat": "{{dimension}}"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "ms" } }
+    },
+    {
+      "id": 12,
+      "type": "timeseries",
+      "title": "CPU Temperature",
+      "gridPos": { "x": 0, "y": 20, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "netdata_system_hw_sensor_temperature_input_degrees_Celsius_average{chip_id=~\"coretemp.*\"}",
+          "legendFormat": "{{label}}"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "celsius" } }
+    },
+    {
+      "id": 13,
+      "type": "timeseries",
+      "title": "Docker Containers",
+      "gridPos": { "x": 12, "y": 20, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "netdata_docker_containers_state_containers_average",
+          "legendFormat": "{{dimension}}"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "none" } }
+    }
+  ]
+}

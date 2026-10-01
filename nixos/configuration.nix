@@ -193,6 +193,14 @@
         isDefault = true;
       }
     ];
+    # Dashboards are checked into this repo as JSON (nixos/grafana-dashboards/)
+    # rather than built by hand in the UI, so they survive a reinstall.
+    provision.dashboards.settings.providers = [
+      {
+        name = "default";
+        options.path = ./grafana-dashboards;
+      }
+    ];
   };
 
   systemd.services.grafana.preStart = ''

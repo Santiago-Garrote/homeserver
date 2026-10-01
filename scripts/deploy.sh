@@ -8,8 +8,7 @@ source .env.variables
 
 ACTION="${1:-switch}"
 
-scp nixos/configuration.nix nixos/hardware-configuration.nix nixos/flake.nix nixos/flake.lock \
-  "$SERVER_HOST:/etc/nixos/"
+rsync -a --delete --exclude result nixos/ "$SERVER_HOST:/etc/nixos/"
 
 ssh "$SERVER_HOST" \
   "sudo nixos-rebuild $ACTION --flake /etc/nixos#nixos --option experimental-features 'nix-command flakes'"
