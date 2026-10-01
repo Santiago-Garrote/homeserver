@@ -32,7 +32,7 @@
   networking.nameservers = [ "192.168.1.1" ];
 
   # Setup networking
-  networking.firewall.allowedTCPPorts = [ 22 53 80 3000 ];
+  networking.firewall.allowedTCPPorts = [ 22 53 80 3000 3001 19999 ];
   networking.firewall.allowedUDPPorts = [ 53 41641 ];
 
   # Set your time zone.
@@ -150,6 +150,57 @@
     useRoutingFeatures = "server";
   };
   networking.firewall.trustedInterfaces = [ "tailscale0" ];
+
+  # Resource monitoring: Netdata collects CPU/RAM/disk/network metrics
+  # locally (not claimed to Netdata Cloud). Note: nixpkgs' netdata package
+  # ships the GPL'd agent/API only — the :19999 web dashboard is NOT
+  # bundled, since that frontend is closed-source and normally pulled live
+  # from app.netdata.cloud. So the actual dashboard is Prometheus+Grafana
+  # below, which scrape Netdata's local Prometheus-compatible endpoint
+  # instead of using its web UI.
+  services.netdata.enable = true;
+
+  services.prometheus = {
+    enable = true;
+    scrapeConfigs = [
+      {
+        job_name = "netdata";
+        metrics_path = "/api/v1/allmetrics";
+        params.format = [ "prometheus" ];
+        static_configs = [{ targets = [ "localhost:19999" ]; }];
+      }
+    ];
+  };
+
+  # Dashboard at :3001 (3000 is taken by AdGuard Home). Default admin/admin
+  # login forces a password change on first visit — credentials are
+  # mutable state on the box, not in this file.
+  services.grafana = {
+    enable = true;
+    settings.server = {
+      http_addr = "0.0.0.0";
+      http_port = 3001;
+    };
+    # Generated on first boot into /var/lib/grafana (not the Nix store,
+    # which is world-readable) and referenced via Grafana's file provider.
+    settings.security.secret_key = "$__file{/var/lib/grafana/secret_key}";
+    provision.datasources.settings.datasources = [
+      {
+        name = "Prometheus";
+        type = "prometheus";
+        access = "proxy";
+        url = "http://localhost:9090";
+        isDefault = true;
+      }
+    ];
+  };
+
+  systemd.services.grafana.preStart = ''
+    if [ ! -f /var/lib/grafana/secret_key ]; then
+      ${pkgs.openssl}/bin/openssl rand -hex 32 > /var/lib/grafana/secret_key
+      chmod 600 /var/lib/grafana/secret_key
+    fi
+  '';
 
   # Open ports in the firewall.
   # networking.firewall.allowedTCPPorts = [ ... ];
