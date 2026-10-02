@@ -32,7 +32,7 @@
   networking.nameservers = [ "192.168.1.1" ];
 
   # Setup networking
-  networking.firewall.allowedTCPPorts = [ 22 53 80 3000 3001 19999 8443 8444 8445 ];
+  networking.firewall.allowedTCPPorts = [ 22 53 80 3000 3001 19999 8443 8444 8445 8446 ];
   networking.firewall.allowedUDPPorts = [ 53 41641 ];
 
   # Set your time zone.
@@ -66,7 +66,8 @@
   users.users.garro = {
     isNormalUser = true;
     description = "SantiagoGarrote";
-    extraGroups = [ "networkmanager" "wheel" ];
+    # "jellyfin" lets garro scp/rsync media files into /srv/media without sudo.
+    extraGroups = [ "networkmanager" "wheel" "jellyfin" ];
     packages = with pkgs; [];
   };
 
@@ -78,8 +79,11 @@
 
   # garro already has full root via wheel+sudo; this just lets deploys write
   # the new config into place without an extra interactive sudo prompt.
+  # /srv/media (setgid, group-writable) is Jellyfin's media library (#23) —
+  # garro is in the "jellyfin" group so files can be copied in without sudo.
   systemd.tmpfiles.rules = [
     "d /etc/nixos 0755 garro users -"
+    "d /srv/media 2775 jellyfin jellyfin -"
   ];
 
   # Let garro run nixos-rebuild without a password (deploys from the
@@ -250,6 +254,12 @@
         reverse_proxy localhost:8384
       '';
     };
+    virtualHosts."nixos.tail70aa47.ts.net:8446" = {
+      extraConfig = ''
+        tls /var/lib/tailscale-certs/nixos.tail70aa47.ts.net.crt /var/lib/tailscale-certs/nixos.tail70aa47.ts.net.key
+        reverse_proxy localhost:8096
+      '';
+    };
   };
 
   # Caddy needs the cert to already exist on its first start.
@@ -333,6 +343,39 @@
   systemd.services.syncthing-init.restartTriggers = [
     config.age.secrets.syncthing-gui-password.file
   ];
+
+  # Media server (issue #23). GUI/streaming reached via Caddy on :8446, same
+  # pattern as Syncthing — not opened directly. Media library lives on the
+  # free space on the single root disk (no separate media partition); garro
+  # is in the "jellyfin" group above so files can be copied in without sudo.
+  #
+  # Hardware transcode: this box's iGPU (Intel HD 2500/4000, Ivy Bridge —
+  # see SPECS.md) is Gen7, which the modern `intel-media-driver` (iHD)
+  # doesn't support (Broadwell/Gen8+ only) — it needs the older
+  # `intel-vaapi-driver` (i965) instead, and only has H.264 hardware
+  # encode/decode, no HEVC/AV1.
+  hardware.graphics = {
+    enable = true;
+    extraPackages = [ pkgs.intel-vaapi-driver ];
+  };
+
+  services.jellyfin = {
+    enable = true;
+    openFirewall = false;
+    user = "jellyfin";
+    group = "jellyfin";
+    hardwareAcceleration = {
+      enable = true;
+      type = "vaapi";
+      device = "/dev/dri/renderD128";
+    };
+    transcoding.enableHardwareEncoding = true;
+  };
+
+  # Device node for /dev/dri is root:render by default; jellyfin's own
+  # DeviceAllow only grants the cgroup permission, the process's own
+  # user/group still needs this to actually open the device.
+  users.users.jellyfin.extraGroups = [ "render" "video" ];
 
   # Open ports in the firewall.
   # networking.firewall.allowedTCPPorts = [ ... ];
