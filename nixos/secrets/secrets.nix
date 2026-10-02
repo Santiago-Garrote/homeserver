@@ -17,13 +17,5 @@ let
   allKeys = [ server garro ];
 in
 {
-  # No secrets yet — this just wires up the tooling. Add one entry per
-  # secret file, e.g.:
-  #
-  #   "syncthing-gui-password.age".publicKeys = allKeys;
-  #
-  # then from a machine with your own SSH key:
-  #   cd nixos/secrets && agenix -e syncthing-gui-password.age
-  # which opens $EDITOR, encrypts on save, and leaves the ciphertext ready
-  # to commit.
+  "syncthing-gui-password.age".publicKeys = allKeys;
 }
