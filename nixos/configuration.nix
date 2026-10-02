@@ -32,7 +32,7 @@
   networking.nameservers = [ "192.168.1.1" ];
 
   # Setup networking
-  networking.firewall.allowedTCPPorts = [ 22 53 80 3000 3001 19999 8443 8444 ];
+  networking.firewall.allowedTCPPorts = [ 22 53 80 3000 3001 19999 8384 8443 8444 8445 ];
   networking.firewall.allowedUDPPorts = [ 53 41641 ];
 
   # Set your time zone.
@@ -244,6 +244,12 @@
         reverse_proxy localhost:80
       '';
     };
+    virtualHosts."nixos.tail70aa47.ts.net:8445" = {
+      extraConfig = ''
+        tls /var/lib/tailscale-certs/nixos.tail70aa47.ts.net.crt /var/lib/tailscale-certs/nixos.tail70aa47.ts.net.key
+        reverse_proxy localhost:8384
+      '';
+    };
   };
 
   # Caddy needs the cert to already exist on its first start.
@@ -277,6 +283,26 @@
     timerConfig = {
       OnBootSec = "5m";
       OnUnitActiveSec = "12h";
+    };
+  };
+
+  # File sync across devices (issue #24). GUI is reachable directly on
+  # :8384 (LAN/tailnet) and via Caddy on :8445 with the TLS cert above.
+  # Which devices/folders to sync isn't declared here — pair them through
+  # the GUI on first use, same mutable-state pattern as AdGuard/Grafana;
+  # overrideDevices/overrideFolders = false keeps nixos-rebuild from
+  # wiping that pairing on every deploy.
+  services.syncthing = {
+    enable = true;
+    guiAddress = "0.0.0.0:8384";
+    openDefaultPorts = true; # sync (22000 tcp/udp) + local discovery (21027 udp)
+    overrideDevices = false;
+    overrideFolders = false;
+    settings.gui = {
+      # Reached via Caddy on a hostname Syncthing didn't issue itself,
+      # which its anti-DNS-rebinding Host-header check would otherwise
+      # reject.
+      insecureSkipHostcheck = true;
     };
   };
 
