@@ -26,6 +26,37 @@ hardware/OS details.
 - `.env.secrets` — gitignored, never committed. Copy `.env.secrets.sample`
   to create it once something actually needs a secret (API key, auth token).
   Nothing needs this yet.
+- Secrets a *service* needs at runtime (a GUI password, an API key a NixOS
+  module reads from a file) go through [agenix](https://github.com/ryantm/agenix)
+  instead — encrypted and committed to `nixos/secrets/`, decrypted
+  automatically on the server at `nixos-rebuild` time. See below.
+
+## Secrets (agenix)
+
+Recipients — who can decrypt — are listed in `nixos/secrets/secrets.nix`:
+the server's own SSH host key (so `nixos-rebuild` can decrypt on deploy)
+and your personal SSH key (so you can encrypt/edit from your own machine).
+Both are plain SSH ed25519 *public* keys, safe to commit.
+
+To add a new secret:
+
+1. `cd nixos/secrets`
+2. Add an entry to `secrets.nix`, e.g. `"some-password.age".publicKeys = allKeys;`
+3. `agenix -e some-password.age` — opens `$EDITOR`, encrypts on save.
+4. Reference it in `configuration.nix` via `age.secrets.some-password.file = ./secrets/some-password.age;`,
+   then point whatever option needs it at `config.age.secrets.some-password.path`
+   (resolves to `/run/agenix/some-password` on the deployed box — never
+   written to the Nix store).
+5. Commit the new `.age` file along with the config change.
+
+To edit an existing secret: `agenix -e <name>.age` from `nixos/secrets`
+(needs your personal SSH key to decrypt first). To add/remove a recipient
+(e.g. a new admin's key), edit `secrets.nix` then `agenix -r` to
+re-encrypt every secret for the updated recipient list.
+
+Requires the `agenix` CLI on your workstation (not the server — the NixOS
+module handles decryption there) — e.g. `nix shell github:ryantm/agenix`,
+or install it some other way.
 
 ## SSH / sudo access
 
