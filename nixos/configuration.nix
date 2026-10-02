@@ -32,7 +32,7 @@
   networking.nameservers = [ "192.168.1.1" ];
 
   # Setup networking
-  networking.firewall.allowedTCPPorts = [ 22 53 80 3000 3001 19999 8443 8444 8445 8446 8447 8448 ];
+  networking.firewall.allowedTCPPorts = [ 22 53 80 443 3000 3001 19999 8443 8444 8445 8446 8447 ];
   networking.firewall.allowedUDPPorts = [ 53 41641 ];
 
   # Set your time zone.
@@ -221,7 +221,9 @@
   # cert — e.g. https://nixos.tail70aa47.ts.net:8443 — rather than sub-paths
   # or subdomains, so every app sees itself as running at "/" and nothing
   # needs reverse-proxy base-path config. The Homepage dashboard below
-  # (issue #27) is what actually hides the port numbers from day-to-day use.
+  # (issue #27) sits on the bare hostname at the standard HTTPS port
+  # instead, and is what actually hides the other services' port numbers
+  # from day-to-day use.
   #
   # One-time manual step (can't be expressed declaratively — it's a setting
   # on Tailscale's hosted control plane, not this box): enable "HTTPS
@@ -266,7 +268,10 @@
         reverse_proxy localhost:8123
       '';
     };
-    virtualHosts."nixos.tail70aa47.ts.net:8448" = {
+    # No port here, unlike the others — this is the one address people
+    # actually type (https://nixos.tail70aa47.ts.net with nothing after
+    # it), so it gets the standard HTTPS port instead of a high one.
+    virtualHosts."nixos.tail70aa47.ts.net" = {
       extraConfig = ''
         tls /var/lib/tailscale-certs/nixos.tail70aa47.ts.net.crt /var/lib/tailscale-certs/nixos.tail70aa47.ts.net.key
         reverse_proxy localhost:8082
@@ -414,14 +419,16 @@
   };
 
   # Service launcher (issue #27) — last in the self-hosted set, since it's
-  # only useful once the others exist. Reached via Caddy on :8448, same
-  # pattern as the services it links to; `openFirewall` stays false since
-  # direct access isn't needed. allowedHosts must match the Host header
-  # browsers actually send (the Tailscale hostname:port Caddy fronts it
-  # on), or homepage-dashboard 403s the request.
+  # only useful once the others exist. Reached via Caddy on the bare
+  # hostname (standard :443, no port to type/remember) — the actual front
+  # door the others' port numbers are hidden behind. `openFirewall` stays
+  # false since direct access isn't needed. allowedHosts must match the
+  # Host header browsers actually send — no port, since 443 is HTTPS's
+  # default and browsers omit it from the Host header — or
+  # homepage-dashboard 403s the request.
   services.homepage-dashboard = {
     enable = true;
-    allowedHosts = "nixos.tail70aa47.ts.net:8448";
+    allowedHosts = "nixos.tail70aa47.ts.net";
     settings.title = "nixos";
     services = [
       {
