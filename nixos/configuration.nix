@@ -32,7 +32,7 @@
   networking.nameservers = [ "192.168.1.1" ];
 
   # Setup networking
-  networking.firewall.allowedTCPPorts = [ 22 53 80 3000 3001 19999 8443 8444 8445 8446 8447 ];
+  networking.firewall.allowedTCPPorts = [ 22 53 80 3000 3001 19999 8443 8444 8445 8446 8447 8448 ];
   networking.firewall.allowedUDPPorts = [ 53 41641 ];
 
   # Set your time zone.
@@ -220,7 +220,7 @@
   # port-forwarding needed). Each service gets its own port behind that one
   # cert — e.g. https://nixos.tail70aa47.ts.net:8443 — rather than sub-paths
   # or subdomains, so every app sees itself as running at "/" and nothing
-  # needs reverse-proxy base-path config. The planned Homepage dashboard
+  # needs reverse-proxy base-path config. The Homepage dashboard below
   # (issue #27) is what actually hides the port numbers from day-to-day use.
   #
   # One-time manual step (can't be expressed declaratively — it's a setting
@@ -264,6 +264,12 @@
       extraConfig = ''
         tls /var/lib/tailscale-certs/nixos.tail70aa47.ts.net.crt /var/lib/tailscale-certs/nixos.tail70aa47.ts.net.key
         reverse_proxy localhost:8123
+      '';
+    };
+    virtualHosts."nixos.tail70aa47.ts.net:8448" = {
+      extraConfig = ''
+        tls /var/lib/tailscale-certs/nixos.tail70aa47.ts.net.crt /var/lib/tailscale-certs/nixos.tail70aa47.ts.net.key
+        reverse_proxy localhost:8082
       '';
     };
   };
@@ -405,6 +411,59 @@
         trusted_proxies = [ "127.0.0.1" "::1" ];
       };
     };
+  };
+
+  # Service launcher (issue #27) — last in the self-hosted set, since it's
+  # only useful once the others exist. Reached via Caddy on :8448, same
+  # pattern as the services it links to; `openFirewall` stays false since
+  # direct access isn't needed. allowedHosts must match the Host header
+  # browsers actually send (the Tailscale hostname:port Caddy fronts it
+  # on), or homepage-dashboard 403s the request.
+  services.homepage-dashboard = {
+    enable = true;
+    allowedHosts = "nixos.tail70aa47.ts.net:8448";
+    settings.title = "nixos";
+    services = [
+      {
+        "Self-hosted" = [
+          {
+            "Grafana" = {
+              icon = "grafana.png";
+              href = "https://nixos.tail70aa47.ts.net:8443";
+              description = "Metrics dashboard";
+            };
+          }
+          {
+            "AdGuard Home" = {
+              icon = "adguard-home.png";
+              href = "https://nixos.tail70aa47.ts.net:8444";
+              description = "LAN DNS ad-blocking";
+            };
+          }
+          {
+            "Syncthing" = {
+              icon = "syncthing.png";
+              href = "https://nixos.tail70aa47.ts.net:8445";
+              description = "File sync";
+            };
+          }
+          {
+            "Jellyfin" = {
+              icon = "jellyfin.png";
+              href = "https://nixos.tail70aa47.ts.net:8446";
+              description = "Media server";
+            };
+          }
+          {
+            "Home Assistant" = {
+              icon = "home-assistant.png";
+              href = "https://nixos.tail70aa47.ts.net:8447";
+              description = "Home automation";
+            };
+          }
+        ];
+      }
+    ];
   };
 
   # Open ports in the firewall.
