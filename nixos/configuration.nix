@@ -292,13 +292,20 @@
   # the GUI on first use, same mutable-state pattern as AdGuard/Grafana;
   # overrideDevices/overrideFolders = false keeps nixos-rebuild from
   # wiping that pairing on every deploy.
+  age.secrets.syncthing-gui-password.file = ./secrets/syncthing-gui-password.age;
+
   services.syncthing = {
     enable = true;
     guiAddress = "0.0.0.0:8384";
     openDefaultPorts = true; # sync (22000 tcp/udp) + local discovery (21027 udp)
     overrideDevices = false;
     overrideFolders = false;
+    # Password is agenix-managed: encrypted at nixos/secrets/syncthing-gui-password.age,
+    # decrypted on deploy to /run/agenix/syncthing-gui-password (tmpfs, never
+    # written to the Nix store). See README.md's "Secrets (agenix)" section.
+    guiPasswordFile = config.age.secrets.syncthing-gui-password.path;
     settings.gui = {
+      user = "garro";
       # Reached via Caddy on a hostname Syncthing didn't issue itself,
       # which its anti-DNS-rebinding Host-header check would otherwise
       # reject.
