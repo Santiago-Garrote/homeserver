@@ -32,7 +32,7 @@
   networking.nameservers = [ "192.168.1.1" ];
 
   # Setup networking
-  networking.firewall.allowedTCPPorts = [ 22 53 80 3000 3001 19999 ];
+  networking.firewall.allowedTCPPorts = [ 22 53 80 3000 3001 19999 8443 8444 ];
   networking.firewall.allowedUDPPorts = [ 53 41641 ];
 
   # Set your time zone.
@@ -132,10 +132,10 @@
   # Enable docker daemon
   virtualisation.docker.enable = true;
 
-  # LAN-wide DNS ad-blocking + local DNS. First run: visit
-  # http://192.168.1.29:3000 to complete the setup wizard (admin user +
-  # upstream DNS servers) — those choices are stored in mutable state on
-  # the box (/var/lib/AdGuardHome), not in this file.
+  # LAN-wide DNS ad-blocking + local DNS. Web UI moved to :80 after the
+  # setup wizard (admin user + upstream DNS servers were chosen there) —
+  # those choices are stored in mutable state on the box
+  # (/var/lib/AdGuardHome), not in this file.
   services.adguardhome = {
     enable = true;
     mutableSettings = true;
@@ -209,6 +209,76 @@
       chmod 600 /var/lib/grafana/secret_key
     fi
   '';
+
+  # Front door for self-hosted services (issue #22). Remote access already
+  # goes through the tailnet, so TLS uses a Tailscale-issued cert for this
+  # box's own MagicDNS name rather than public Let's Encrypt (no domain, no
+  # port-forwarding needed). Each service gets its own port behind that one
+  # cert — e.g. https://nixos.tail70aa47.ts.net:8443 — rather than sub-paths
+  # or subdomains, so every app sees itself as running at "/" and nothing
+  # needs reverse-proxy base-path config. The planned Homepage dashboard
+  # (issue #27) is what actually hides the port numbers from day-to-day use.
+  #
+  # One-time manual step (can't be expressed declaratively — it's a setting
+  # on Tailscale's hosted control plane, not this box): enable "HTTPS
+  # Certificates" for this tailnet in the Tailscale admin console before
+  # `tailscale cert` below will succeed.
+  services.caddy = {
+    enable = true;
+    # We supply certs manually via `tls cert_file key_file` on each site
+    # below, so Caddy's automatic-HTTPS machinery (which otherwise also
+    # grabs port 80 for an HTTP->HTTPS redirect) isn't needed — and port 80
+    # is already taken by AdGuard Home's web UI.
+    globalConfig = ''
+      auto_https off
+    '';
+    virtualHosts."nixos.tail70aa47.ts.net:8443" = {
+      extraConfig = ''
+        tls /var/lib/tailscale-certs/nixos.tail70aa47.ts.net.crt /var/lib/tailscale-certs/nixos.tail70aa47.ts.net.key
+        reverse_proxy localhost:3001
+      '';
+    };
+    virtualHosts."nixos.tail70aa47.ts.net:8444" = {
+      extraConfig = ''
+        tls /var/lib/tailscale-certs/nixos.tail70aa47.ts.net.crt /var/lib/tailscale-certs/nixos.tail70aa47.ts.net.key
+        reverse_proxy localhost:80
+      '';
+    };
+  };
+
+  # Caddy needs the cert to already exist on its first start.
+  systemd.services.caddy = {
+    after = [ "tailscale-cert.service" ];
+    wants = [ "tailscale-cert.service" ];
+  };
+
+  systemd.services.tailscale-cert = {
+    description = "Issue/renew the Tailscale TLS cert used by Caddy";
+    after = [ "tailscaled.service" ];
+    wants = [ "tailscaled.service" ];
+    serviceConfig.Type = "oneshot";
+    script = ''
+      set -euo pipefail
+      mkdir -p /var/lib/tailscale-certs
+      ${pkgs.tailscale}/bin/tailscale cert \
+        --cert-file=/var/lib/tailscale-certs/nixos.tail70aa47.ts.net.crt \
+        --key-file=/var/lib/tailscale-certs/nixos.tail70aa47.ts.net.key \
+        nixos.tail70aa47.ts.net
+      chown caddy:caddy /var/lib/tailscale-certs/nixos.tail70aa47.ts.net.crt /var/lib/tailscale-certs/nixos.tail70aa47.ts.net.key
+      chmod 640 /var/lib/tailscale-certs/nixos.tail70aa47.ts.net.crt /var/lib/tailscale-certs/nixos.tail70aa47.ts.net.key
+      systemctl try-reload-or-restart caddy.service
+    '';
+  };
+
+  # Tailscale certs are short-lived; keep them renewed without hands-on-box.
+  systemd.timers.tailscale-cert = {
+    description = "Periodic renewal of the Tailscale TLS cert for Caddy";
+    wantedBy = [ "timers.target" ];
+    timerConfig = {
+      OnBootSec = "5m";
+      OnUnitActiveSec = "12h";
+    };
+  };
 
   # Open ports in the firewall.
   # networking.firewall.allowedTCPPorts = [ ... ];
