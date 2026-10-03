@@ -63,6 +63,30 @@
         reverse_proxy localhost:8123
       '';
     };
+    virtualHosts."nixos.tail70aa47.ts.net:8448" = {
+      extraConfig = ''
+        tls /var/lib/tailscale-certs/nixos.tail70aa47.ts.net.crt /var/lib/tailscale-certs/nixos.tail70aa47.ts.net.key
+        reverse_proxy localhost:8080
+      '';
+    };
+    virtualHosts."nixos.tail70aa47.ts.net:8449" = {
+      extraConfig = ''
+        tls /var/lib/tailscale-certs/nixos.tail70aa47.ts.net.crt /var/lib/tailscale-certs/nixos.tail70aa47.ts.net.key
+        reverse_proxy localhost:8989
+      '';
+    };
+    virtualHosts."nixos.tail70aa47.ts.net:8450" = {
+      extraConfig = ''
+        tls /var/lib/tailscale-certs/nixos.tail70aa47.ts.net.crt /var/lib/tailscale-certs/nixos.tail70aa47.ts.net.key
+        reverse_proxy localhost:7878
+      '';
+    };
+    virtualHosts."nixos.tail70aa47.ts.net:8451" = {
+      extraConfig = ''
+        tls /var/lib/tailscale-certs/nixos.tail70aa47.ts.net.crt /var/lib/tailscale-certs/nixos.tail70aa47.ts.net.key
+        reverse_proxy localhost:9696
+      '';
+    };
     # No port here, unlike the others — this is the one address people
     # actually type (https://nixos.tail70aa47.ts.net with nothing after
     # it), so it gets the standard HTTPS port instead of a high one.
@@ -166,5 +190,5 @@
     };
   };
 
-  networking.firewall.allowedTCPPorts = [ 443 8443 8444 8445 8446 8447 ];
+  networking.firewall.allowedTCPPorts = [ 443 8443 8444 8445 8446 8447 8448 8449 8450 8451 ];
 }

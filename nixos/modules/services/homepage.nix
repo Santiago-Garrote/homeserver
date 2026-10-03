@@ -54,6 +54,34 @@
               description = "Home automation";
             };
           }
+          {
+            "qBittorrent" = {
+              icon = "qbittorrent.png";
+              href = "https://nixos.tail70aa47.ts.net:8448";
+              description = "Torrent client";
+            };
+          }
+          {
+            "Sonarr" = {
+              icon = "sonarr.png";
+              href = "https://nixos.tail70aa47.ts.net:8449";
+              description = "TV library organizer";
+            };
+          }
+          {
+            "Radarr" = {
+              icon = "radarr.png";
+              href = "https://nixos.tail70aa47.ts.net:8450";
+              description = "Movie library organizer";
+            };
+          }
+          {
+            "Prowlarr" = {
+              icon = "prowlarr.png";
+              href = "https://nixos.tail70aa47.ts.net:8451";
+              description = "Indexer manager";
+            };
+          }
         ];
       }
     ];

@@ -25,6 +25,10 @@
     ./modules/services/caddy.nix
     ./modules/services/syncthing.nix
     ./modules/services/jellyfin.nix
+    ./modules/services/qbittorrent.nix
+    ./modules/services/sonarr.nix
+    ./modules/services/radarr.nix
+    ./modules/services/prowlarr.nix
     ./modules/services/home-assistant.nix
     ./modules/services/homepage.nix
   ];

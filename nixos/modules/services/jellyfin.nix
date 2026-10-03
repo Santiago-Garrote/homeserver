@@ -1,11 +1,16 @@
 { pkgs, ... }:
 
 {
-  # Media server (issue #23). GUI/streaming reached via Caddy on :8446, same
-  # pattern as Syncthing — not opened directly. Media library lives on the
-  # free space on the single root disk (no separate media partition); garro
-  # is in the "jellyfin" group (./users.nix) so files can be copied in
-  # without sudo.
+  # Media server (issue #23). GUI/streaming reached via Caddy on :8446 (TLS,
+  # Tailscale cert — works anywhere on the tailnet). Also opened directly on
+  # its own port 8096 for plain-HTTP LAN access by IP (192.168.1.29:8096) —
+  # needed because some clients (smart TVs, etc.) don't handle custom
+  # hostnames well, and because the Caddy route's cert is only valid for the
+  # tailnet hostname, not the raw LAN IP. Safe to open since nothing is
+  # port-forwarded from the router — this only reaches LAN + tailnet, same
+  # as everything else here. Media library lives on the free space on the
+  # single root disk (no separate media partition); garro is in the
+  # "jellyfin" group (./users.nix) so files can be copied in without sudo.
   #
   # Hardware transcode: this box's iGPU (Intel HD 2500/4000, Ivy Bridge —
   # see SPECS.md) is Gen7, which the modern `intel-media-driver` (iHD)
@@ -19,7 +24,7 @@
 
   services.jellyfin = {
     enable = true;
-    openFirewall = false;
+    openFirewall = true;
     user = "jellyfin";
     group = "jellyfin";
     hardwareAcceleration = {
